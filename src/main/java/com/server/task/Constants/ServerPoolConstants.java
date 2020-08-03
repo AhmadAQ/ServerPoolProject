@@ -1,6 +1,6 @@
 package com.server.task.Constants;
 
-public class AerospikeConstants {
+public class ServerPoolConstants {
 
     public static final String AEROSPIKE_SERVER_HOST_NAME = "172.28.128.3";
     public static final int AEROSPIKE_SERVER_PORT = 3000;

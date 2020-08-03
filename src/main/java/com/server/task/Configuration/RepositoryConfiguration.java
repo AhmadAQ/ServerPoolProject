@@ -9,7 +9,7 @@ import org.springframework.data.aerospike.core.AerospikeTemplate;
 import org.springframework.data.aerospike.repository.config.EnableAerospikeRepositories;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-import static com.server.task.Constants.AerospikeConstants.*;
+import static com.server.task.Constants.ServerPoolConstants.*;
 
 @Configuration
 @EnableAerospikeRepositories(basePackages = {"com.server.task.Repository"})

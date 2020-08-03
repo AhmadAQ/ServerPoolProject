@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.server.task.Constants.AerospikeConstants.MAXIMUM_SERVER_SIZE;
-import static com.server.task.Constants.AerospikeConstants.MINIMUM_SERVER_SIZE;
+import static com.server.task.Constants.ServerPoolConstants.MAXIMUM_SERVER_SIZE;
+import static com.server.task.Constants.ServerPoolConstants.MINIMUM_SERVER_SIZE;
 
 @Component
 @Qualifier("AerospikeData")
@@ -71,11 +71,28 @@ public class AerospikeDao implements ServerDao {
      * @return A string that represents the operation done
      */
     public String cloudService(int size) {
-        ExecutorService executor = Executors.newFixedThreadPool(4);
+        ExecutorService executor = Executors.newFixedThreadPool(1);
         Server availableServer = getAvailableServer(size);
         if (availableServer != null) {
             return updateServer(executor, availableServer, size);
         } else return spinServer(executor, size);
+    }
+
+    /**
+     * Checks if there is an available server with the required free size be allocated
+     *
+     * @param size The amount of server size be allocated
+     * @return the server if it exists, null other wise
+     */
+    public synchronized Server getAvailableServer(int size) {
+        List<Server> servers = getAllServers();
+        for (Server server : servers) {
+            if (server.getFreeSize() >= size && server.isActive()) {
+                updateServerData(server, size);
+                return server;
+            }
+        }
+        return null; // Server Does not exist
     }
 
     /**
@@ -101,23 +118,6 @@ public class AerospikeDao implements ServerDao {
     public String spinServer(ExecutorService executor, int size) {
         executor.execute(new AllocateServerThread(aerospikeDao, size));
         return "A new server is being spun, the storage will be allocated once the server is active";
-    }
-
-    /**
-     * Checks if there is an available server with the required free size be allocated
-     *
-     * @param size The amount of server size be allocated
-     * @return the server if it exists, null other wise
-     */
-    public synchronized Server getAvailableServer(int size) {
-        List<Server> servers = getAllServers();
-        for (Server server : servers) {
-            if (server.getFreeSize() >= size && server.isActive()) {
-                updateServerData(server, size);
-                return server;
-            }
-        }
-        return null; // Server Does not exist
     }
 
     /**
