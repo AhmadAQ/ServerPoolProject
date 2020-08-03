@@ -51,6 +51,8 @@ public class AerospikeDao implements ServerDao {
     }
 
     /**
+     * Allocates a server
+     *
      * @param size The amount of server size to allocate
      * @return a string that expresses the output of the operation
      */
@@ -62,7 +64,7 @@ public class AerospikeDao implements ServerDao {
     }
 
     /**
-     * Allocates a server for a specified size by searching through active
+     * Allocates memory for a specified size by searching through active
      * servers if there isn't sufficient memory space a new server will be spun.
      *
      * @param size The amount of server size to be allocated
@@ -77,7 +79,7 @@ public class AerospikeDao implements ServerDao {
     }
 
     /**
-     * Updates a server data
+     * Allocates memory space in an existing server
      *
      * @param executor The thread allocated for an operation
      * @param server   The server to update its parameters

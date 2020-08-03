@@ -1,6 +1,5 @@
 package com.server.task.Model;
 
-
 import org.springframework.data.annotation.Id;
 
 public class Server implements Comparable<Server> {
@@ -52,7 +51,7 @@ public class Server implements Comparable<Server> {
 
     @Override
     public int compareTo(Server o) {
-        return serverId > o.getServerId() ? 1 : serverId < o.getServerId() ? -1 : 0;
+        return Integer.compare(serverId, o.getServerId());
     }
 
 }
