@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -25,7 +24,7 @@ public class ServerController {
             List<Server> serverList = resourceManagementService.getAllServers();
             return new ResponseEntity<>(serverList, HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>(new ArrayList<>(), HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         }
     }
 

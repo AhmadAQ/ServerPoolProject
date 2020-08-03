@@ -1,16 +1,19 @@
 package com.server.task.ThreadUtility;
 
-import com.server.task.Dao.ServerDao;
+import com.server.task.Dao.AerospikeDao;
 import com.server.task.Model.Server;
+
+import java.util.logging.Logger;
 
 public class AllocateServerThread implements Runnable {
 
-
-    ServerDao serverDao;
+    private AerospikeDao aerospikeDao;
     private int size;
+    private Logger logger = Logger.getLogger(AllocateServerThread.class.getName());
 
-    public AllocateServerThread(ServerDao serverDao, int size) {
-        this.serverDao = serverDao;
+
+    public AllocateServerThread(AerospikeDao aerospikeDao, int size) {
+        this.aerospikeDao = aerospikeDao;
         this.size = size;
     }
 
@@ -20,10 +23,12 @@ public class AllocateServerThread implements Runnable {
     @Override
     public void run() {
         try {
+            logger.info("Server is in Creating status (20s)");
             Thread.sleep(20000);
-            Server createdServer = serverDao.createServer();
+            Server createdServer = aerospikeDao.createServer();
             createdServer.setStatus(true);
-            serverDao.saveAllocatedServer(createdServer, size);
+            aerospikeDao.saveAllocatedServer(createdServer, size);
+            logger.info("Server Successfully Created and initialized with value of: " + size +" GB");
         } catch (Exception e) {
             e.printStackTrace();
         }
