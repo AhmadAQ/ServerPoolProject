@@ -71,7 +71,7 @@ public class AerospikeDao implements ServerDao {
      * @return A string that represents the operation done
      */
     public String cloudService(int size) {
-        ExecutorService executor = Executors.newFixedThreadPool(4);
+        ExecutorService executor = Executors.newFixedThreadPool(1);
         Server availableServer = getAvailableServer(size);
         if (availableServer != null) {
             return updateServer(executor, availableServer, size);
