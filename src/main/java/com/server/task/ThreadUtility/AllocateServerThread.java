@@ -11,7 +11,6 @@ public class AllocateServerThread implements Runnable {
     private int size;
     private Logger logger = Logger.getLogger(AllocateServerThread.class.getName());
 
-
     public AllocateServerThread(AerospikeDao aerospikeDao, int size) {
         this.aerospikeDao = aerospikeDao;
         this.size = size;
