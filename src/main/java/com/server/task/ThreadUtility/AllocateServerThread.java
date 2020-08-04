@@ -14,13 +14,13 @@ public class AllocateServerThread implements Runnable {
     private ServerRepository serverRepository;
     private int size;
     private int serverId;
-    private static Map<Integer, Integer> serversWaiting;
+    private static Map<Integer, Integer> serversInCreatingStatus;
     private Logger logger = Logger.getLogger(AllocateServerThread.class.getName());
 
-    public AllocateServerThread(AerospikeDao aerospikeDao, ServerRepository serverRepository, int size, Map<Integer, Integer> serversWaiting, int serverId) {
+    public AllocateServerThread(AerospikeDao aerospikeDao, ServerRepository serverRepository, int size, Map<Integer, Integer> serversInCreatingStatus, int serverId) {
         this.aerospikeDao = aerospikeDao;
         this.size = size;
-        this.serversWaiting = serversWaiting;
+        this.serversInCreatingStatus = serversInCreatingStatus;
         this.serverRepository = serverRepository;
         this.serverId = serverId;
     }
@@ -34,12 +34,12 @@ public class AllocateServerThread implements Runnable {
             logger.info("Server is in Creating Status (20s)");
             Server createdServer = aerospikeDao.createServer(serverId);
             serverRepository.save(createdServer);
-            Thread.sleep(5000);
-            aerospikeDao.saveAllocatedServer(createdServer,serversWaiting.get(serverId));
+            Thread.sleep(20000);
+            aerospikeDao.saveAllocatedServer(createdServer,serversInCreatingStatus.get(serverId));
             createdServer.setStatus(true);
             serverRepository.save(createdServer);
-            serversWaiting.remove(serverId);
-            logger.info("Server Successfully Created of size: " + size + " GB");
+            serversInCreatingStatus.remove(serverId);
+            logger.info("Server Successfully Created of size: " + size + " GB" + "on a new Server");
         } catch (Exception e) {
             e.printStackTrace();
         }

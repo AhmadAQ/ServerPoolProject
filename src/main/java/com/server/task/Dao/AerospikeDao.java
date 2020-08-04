@@ -26,7 +26,7 @@ public class AerospikeDao implements ServerDao {
     @Autowired
     private AerospikeDao aerospikeDao;
 
-    private Map<Integer, Integer> serversWaiting = new HashMap<>();
+    private Map<Integer, Integer> serversInCreatingStatus = new HashMap<>();
     private Logger logger = Logger.getLogger(AerospikeDao.class.getName());
 
     /**
@@ -74,19 +74,17 @@ public class AerospikeDao implements ServerDao {
      * @return A string that represents the operation done
      */
     public String cloudService(int size) {
-        ExecutorService executor = Executors.newFixedThreadPool(1);
-        Server availableServer = getAvailableServer(size);
+        ExecutorService executor = Executors.newFixedThreadPool(1); //allocates thread pool for each instance
+        Server availableServer = getAvailableServer(size); // checks in database if there is available memory
         if (availableServer != null) {
             logger.info("Allocated in an Existing Server");
             return updateServer(executor, availableServer, size);
         } else if (searchWaitingServers(size) != 0) {
-//            serverWaitingId = searchWaitingServers(size);
-//            serversWaiting.computeIfPresent(serverWaitingId, (k, v) -> v + 50);
             logger.info("Allocated in a Waiting Server");
             return "Server has been allocated in a waitingServer";
         } else {
-            serversWaiting.put(getServerId(), size);
-            return spinServer(executor, serversWaiting.get(getServerId()), getServerId());
+            serversInCreatingStatus.put(getServerId(), size);
+            return spinServer(executor, serversInCreatingStatus.get(getServerId()), getServerId());
         }
     }
 
@@ -107,14 +105,21 @@ public class AerospikeDao implements ServerDao {
         return null; // Server Does not exist
     }
 
+    /**
+     * checks if their exists available storage that can be allocated on a waiting server
+     *
+     * @param size The amount of server size be allocated
+     * @return returns ture if there is storage to be allocated on
+     * a waiting server
+     */
     public synchronized int searchWaitingServers(int size) {
-        Iterator iterator = serversWaiting.entrySet().iterator();
+        Iterator iterator = serversInCreatingStatus.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry mapElement = (Map.Entry) iterator.next();
             int sizeLeft = MAXIMUM_SERVER_SIZE - ((int) mapElement.getValue());
             if (sizeLeft >= size) {
-                int elementID =(int) mapElement.getKey();
-                serversWaiting.computeIfPresent(elementID, (k, v) -> v + size);
+                int elementID = (int) mapElement.getKey();
+                serversInCreatingStatus.computeIfPresent(elementID, (k, v) -> v + size);
                 return 1;
             }
         }
@@ -142,7 +147,7 @@ public class AerospikeDao implements ServerDao {
      * @return A string that represents that the server is being created
      */
     public String spinServer(ExecutorService executor, int size, int serverId) {
-        executor.execute(new AllocateServerThread(aerospikeDao, serverRepository, size, serversWaiting, serverId));
+        executor.execute(new AllocateServerThread(aerospikeDao, serverRepository, size, serversInCreatingStatus, serverId));
         return "A new server is being spun, the storage will be allocated once the server is active";
     }
 
@@ -199,6 +204,11 @@ public class AerospikeDao implements ServerDao {
         return new Server(serverId);
     }
 
+    /**
+     * Creates an id for a server
+     *
+     * @return returns server id
+     */
     public int getServerId() {
         return getAllServers().size();
     }
