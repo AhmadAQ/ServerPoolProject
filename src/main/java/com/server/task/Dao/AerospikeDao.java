@@ -8,11 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
 
 import static com.server.task.Constants.ServerPoolConstants.MAXIMUM_SERVER_SIZE;
 import static com.server.task.Constants.ServerPoolConstants.MINIMUM_SERVER_SIZE;
@@ -25,6 +25,9 @@ public class AerospikeDao implements ServerDao {
     private ServerRepository serverRepository;
     @Autowired
     private AerospikeDao aerospikeDao;
+
+    private Map<Integer, Integer> serversWaiting = new HashMap<>();
+    private Logger logger = Logger.getLogger(AerospikeDao.class.getName());
 
     /**
      * Fetches All servers allocated in the DB
@@ -74,12 +77,21 @@ public class AerospikeDao implements ServerDao {
         ExecutorService executor = Executors.newFixedThreadPool(1);
         Server availableServer = getAvailableServer(size);
         if (availableServer != null) {
+            logger.info("Allocated in an Existing Server");
             return updateServer(executor, availableServer, size);
-        } else return spinServer(executor, size);
+        } else if (searchWaitingServers(size) != 0) {
+//            serverWaitingId = searchWaitingServers(size);
+//            serversWaiting.computeIfPresent(serverWaitingId, (k, v) -> v + 50);
+            logger.info("Allocated in a Waiting Server");
+            return "Server has been allocated in a waitingServer";
+        } else {
+            serversWaiting.put(getServerId(), size);
+            return spinServer(executor, serversWaiting.get(getServerId()), getServerId());
+        }
     }
 
     /**
-     * Checks if there is an available server with the required free size be allocated
+     * Checks if there is an available server with the required free size to be allocated
      *
      * @param size The amount of server size be allocated
      * @return the server if it exists, null other wise
@@ -93,6 +105,20 @@ public class AerospikeDao implements ServerDao {
             }
         }
         return null; // Server Does not exist
+    }
+
+    public synchronized int searchWaitingServers(int size) {
+        Iterator iterator = serversWaiting.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry mapElement = (Map.Entry) iterator.next();
+            int sizeLeft = MAXIMUM_SERVER_SIZE - ((int) mapElement.getValue());
+            if (sizeLeft >= size) {
+                int elementID =(int) mapElement.getKey();
+                serversWaiting.computeIfPresent(elementID, (k, v) -> v + size);
+                return 1;
+            }
+        }
+        return 0;
     }
 
     /**
@@ -115,8 +141,8 @@ public class AerospikeDao implements ServerDao {
      * @param size     The amount of server size be allocated
      * @return A string that represents that the server is being created
      */
-    public String spinServer(ExecutorService executor, int size) {
-        executor.execute(new AllocateServerThread(aerospikeDao, size));
+    public String spinServer(ExecutorService executor, int size, int serverId) {
+        executor.execute(new AllocateServerThread(aerospikeDao, serverRepository, size, serversWaiting, serverId));
         return "A new server is being spun, the storage will be allocated once the server is active";
     }
 
@@ -169,8 +195,12 @@ public class AerospikeDao implements ServerDao {
      *
      * @return returns a new server with an id and empty data fields
      */
-    public Server createServer() {
-        int newServerId = (int) serverRepository.count() + 1;
-        return new Server(newServerId);
+    public Server createServer(int serverId) {
+        return new Server(serverId);
     }
+
+    public int getServerId() {
+        return getAllServers().size();
+    }
+
 }
