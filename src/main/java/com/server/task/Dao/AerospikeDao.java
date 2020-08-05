@@ -83,8 +83,9 @@ public class AerospikeDao implements ServerDao {
             logger.info("Allocated in a Waiting Server");
             return "Server has been allocated in a waitingServer";
         } else {
-            serversInCreatingStatus.put(getServerId(), size);
-            return spinServer(executor, serversInCreatingStatus.get(getServerId()), getServerId());
+            int newServerId = createServerId();
+            serversInCreatingStatus.put(newServerId, size);
+            return spinServer(executor, serversInCreatingStatus.get(newServerId), newServerId);
         }
     }
 
@@ -209,7 +210,7 @@ public class AerospikeDao implements ServerDao {
      *
      * @return returns server id
      */
-    public int getServerId() {
+    public int createServerId() {
         return getAllServers().size();
     }
 
